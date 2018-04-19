@@ -4,9 +4,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.trello4j</groupId>
   <artifactId>trello4j</artifactId>
-  <version>1.22</version>
+  <version>1.23</version>
   <description>POM was created from install:install-file</description>
- <dependencies>
+  <dependencies>
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
@@ -19,6 +19,5 @@
             <version>4.8.1</version>
             <scope>test</scope>
         </dependency>
-
   </dependencies> 
-  </project>
+</project>

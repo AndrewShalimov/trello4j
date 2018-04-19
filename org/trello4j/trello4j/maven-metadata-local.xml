@@ -3,10 +3,10 @@
   <groupId>org.trello4j</groupId>
   <artifactId>trello4j</artifactId>
   <versioning>
-    <release>1.22</release>
+    <release>1.23</release>
     <versions>
-      <version>1.22</version>
+      <version>1.23</version>
     </versions>
-    <lastUpdated>20180419204645</lastUpdated>
+    <lastUpdated>20180419205951</lastUpdated>
   </versioning>
 </metadata>
