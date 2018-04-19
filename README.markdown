@@ -44,6 +44,10 @@ Now you got two options:
     Organization org = trello.getOrganization("fogcreek");
 
 
+	// example: get all boards for owner of credentials
+    List<Board> boards = trello.getAllBoards();
+
+
 <table>
   <tr><th>Method</th><th>Version</th></tr>
   
@@ -88,6 +92,7 @@ Now you got two options:
 <tr><td>POST /1/boards/[board_id]/checklists           </td><td>TODO</td></tr>
 <tr><td>POST /1/boards/[board_id]/lists                </td><td>TODO</td></tr>
 <tr><td>POST /1/boards/[board_id]/myPrefs              </td><td>TODO</td></tr>
+<tr><td>POST /1/members/me/boards                      </td><td>IMPLEMENTED</td></tr>
 
 <tr><th colspan="2">Cards</th></tr>
 <tr><td>GET /1/cards/[card_id]                             </td><td>IMPLEMENTED</td></tr>

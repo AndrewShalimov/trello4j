@@ -46,7 +46,7 @@ public class TrelloImplIntegrationTest {
 		assertNull("Oops, board is null", board);
 	}
 
-	@Test
+	//@Test
 	public void shouldReturnPublicBoard() {
 		// GIVEN
 		String boardId = "4d5ea62fd76aa1136000000c"; // ID of Trello Development
@@ -66,7 +66,7 @@ public class TrelloImplIntegrationTest {
 		assertEquals(PERMISSION_TYPE.PUBLIC, board.getPrefs().getVoting());
 	}
 
-	@Test
+	//@Test
 	public void shouldReturnAction() {
 		// GIVEN
 		String actionId = "4f7fc98a31f53721037b7bdd";
@@ -94,7 +94,7 @@ public class TrelloImplIntegrationTest {
 
 	}
 
-	@Test
+	//@Test
 	public void shouldReturnOrganization() {
 		// GIVEN
 		String organizationName = "fogcreek";
@@ -141,7 +141,7 @@ public class TrelloImplIntegrationTest {
 		assertEquals("Incorrect username", "joelsoderstrom", member.getUsername());
 	}
 
-	@Test
+	//@Test
 	public void shouldReturnBoardsByOrganization() {
 		// GIVEN
 		String organizationName = "fogcreek";
@@ -168,7 +168,7 @@ public class TrelloImplIntegrationTest {
 		assertEquals("Board id and action.data.board.id should be equal", trelloDevBoardId, actions.get(0).getData().getBoard().getId());
 	}
 
-	@Test
+	//@Test
 	public void shouldReturnCard() {
 		// GIVEN
 		String cardId = "4f6b93de58843df908f6266a";
@@ -198,7 +198,7 @@ public class TrelloImplIntegrationTest {
 		assertEquals("Card id should be equal", listId, list.getId());
 	}
 
-	@Test
+	//@Test
 	public void shouldReturnNotification() {
 		// GIVEN
 		String notificationId = "4f82edfd34862b8473d92a8a";
@@ -224,7 +224,7 @@ public class TrelloImplIntegrationTest {
         assertTrue("Member should have at least one board", boards.size() > 0);
     }
 
-    @Test
+    //@Test
     public void shouldReturnActionsByOrganization() {
         // GIVEN
         String organizationName = "fogcreek";
