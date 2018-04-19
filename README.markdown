@@ -230,13 +230,6 @@ Now you got two options:
 [skydjol](https://github.com/skydjol)
 
 
-	
+ mvn clean install -Dmaven.test.skip=true	
 
 	
-	
-
-
-
-
-
-

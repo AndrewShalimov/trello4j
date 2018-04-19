@@ -1,6 +1,7 @@
 package org.trello4j.model;
 
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * Model that represents a user action @ Trello.
@@ -116,7 +117,6 @@ public class Action extends TrelloObject {
 
 
     public static class TYPE {
-
         public static final String CREATE_CARD = "createCard";
         public static final String COMMENT_CARD = "commentCard";
         public static final String UPDATE_CARD = "updateCard";
@@ -141,7 +141,35 @@ public class Action extends TrelloObject {
         public static final String REMOVE_FROM_ORGANIZATION_BOARD = "removeFromOrganizationBoard";
         public static final String CREATE_ORGANIZATION = "createOrganization";
         public static final String UPDATE_ORGANIZATION = "updateOrganization";
-
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Action action = (Action) o;
+        return Objects.equals(idMemberCreator, action.idMemberCreator) &&
+                Objects.equals(type, action.type) &&
+                Objects.equals(date, action.date) &&
+                Objects.equals(memberCreator, action.memberCreator) &&
+                Objects.equals(data, action.data);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(idMemberCreator, type, date, memberCreator, data);
+    }
+
+    @Override
+    public String toString() {
+        return "Action{" +
+                "id='" + getId() + '\'' +
+                ", idMemberCreator='" + idMemberCreator + '\'' +
+                ", type='" + type + '\'' +
+                ", date=" + date +
+                ", memberCreator=" + memberCreator +
+                ", data=" + data +
+                '}';
+    }
 }
