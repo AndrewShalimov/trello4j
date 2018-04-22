@@ -26,6 +26,8 @@ public class TrelloURL {
     public static final String ACTION_MEMBERCREATOR_URL = "https://api.trello.com/1/actions/{0}/memberCreator";
     public static final String ACTION_ORGANIZATION_URL = "https://api.trello.com/1/actions/{0}/organization";
     public static final String BOARD_CARDS_URL = "https://api.trello.com/1/boards/{0}/cards";
+    public static final String BOARD_CUSTOM_FIELDS_URL = "https://api.trello.com/1/boards/{0}/customFields";
+    public static final String CARDS_CUSTOM_FIELDS_URL = "https://api.trello.com/1/cards/{0}/customFields";
     public static final String BOARD_CHECKLISTS_URL = "https://api.trello.com/1/boards/{0}/checklists";
     public static final String BOARD_LISTS_URL = "https://api.trello.com/1/boards/{0}/lists";
     public static final String BOARD_MEMBERS_URL = "https://api.trello.com/1/boards/{0}/members";
@@ -41,6 +43,7 @@ public class TrelloURL {
     public static final String CARD_CHECKLISTS_URL = "https://api.trello.com/1/cards/{0}/checklists";
     public static final String CARD_LIST_URL = "https://api.trello.com/1/cards/{0}/list";
     public static final String CARD_MEMBERS_URL = "https://api.trello.com/1/cards/{0}/members";
+    public static final String SET_CUSTOM_FIELD_URL = "https://api.trello.com/1/card/{0}/customField/{1}/item";
     public static final String CARD_POST_URL = "https://api.trello.com/1/cards";
     public static final String LIST_ACTIONS_URL = "https://api.trello.com/1/lists/{0}/action";
     public static final String LIST_BOARD_URL = "https://api.trello.com/1/lists/{0}/board";
@@ -83,6 +86,8 @@ public class TrelloURL {
 
     private String[] filters = null;
 
+    private String[] addParams = null;
+
 
     public static TrelloURL create(String apiKey, String url,
                                    String... pathParams) {
@@ -105,6 +110,11 @@ public class TrelloURL {
         return this;
     }
 
+    public TrelloURL addParameters(String... addParams) {
+        this.addParams = isArrayEmpty(addParams) ? null : addParams;
+        return this;
+    }
+
     public String build() {
         if (apiKey == null || url == null) {
             throw new NullPointerException(
@@ -115,6 +125,7 @@ public class TrelloURL {
                 .append(createUrlWithPathParams())
                 .append(createAuthQueryString())
                 .append(createFilterQuery())
+                .append(createAddParametersQuery())
                 .toString();
     }
 
@@ -130,6 +141,19 @@ public class TrelloURL {
         return filterStr;
     }
 
+    private String createAddParametersQuery() {
+        String paramsStr = "";
+        if (this.addParams != null) {
+            StringBuilder sb = new StringBuilder("&");
+            for (int i = 0; i < addParams.length; i++) {
+                sb.append(i > 0 ? "," : "").append(addParams[i]);
+            }
+            paramsStr = sb.toString();
+        }
+        return paramsStr;
+    }
+
+
     private String createAuthQueryString() {
         StringBuilder sb = new StringBuilder(KEY_QUERY_PARAM).append(apiKey);
 
@@ -141,10 +165,9 @@ public class TrelloURL {
 
     private String createUrlWithPathParams() {
         if (pathParams == null || pathParams.length == 0) return url;
-        String compiledUrl = null;
+        String compiledUrl = url;
         for (int i = 0; i < pathParams.length; i++) {
-            compiledUrl = url.replaceAll(PATH_PARAM_ARG_PREFIX + i
-                    + PATH_PARAM_ARG_SUFFIX, pathParams[i]);
+            compiledUrl = compiledUrl.replaceAll(PATH_PARAM_ARG_PREFIX + i + PATH_PARAM_ARG_SUFFIX, pathParams[i]);
         }
         // boardUrl += authQueryString;
         return compiledUrl;

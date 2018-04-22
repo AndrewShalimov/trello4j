@@ -1,21 +1,34 @@
 package org.trello4j;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.trello4j.model.*;
 import org.trello4j.model.Board.Prefs;
 import org.trello4j.model.Card.Attachment;
 import org.trello4j.model.Checklist.CheckItem;
 
 import javax.net.ssl.HttpsURLConnection;
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.Optional;
 import java.util.zip.GZIPInputStream;
+
+import static org.trello4j.TrelloURL.CARD_URL;
+import static org.trello4j.TrelloURL.SET_CUSTOM_FIELD_URL;
 
 /**
  * The Class TrelloImpl.
@@ -124,7 +137,8 @@ public class TrelloImpl implements Trello {
                 .create(apiKey, TrelloURL.ALL_BOARDS)
                 .token(token)
                 .build();
-        return trelloObjFactory.createObject(new TypeToken<List<Board>>() { }, doGet(url));
+        return trelloObjFactory.createObject(new TypeToken<List<Board>>() {
+        }, doGet(url));
     }
 
     /*
@@ -417,7 +431,7 @@ public class TrelloImpl implements Trello {
         validateObjectId(cardId);
 
         final String url = TrelloURL
-                .create(apiKey, TrelloURL.CARD_URL, cardId)
+                .create(apiKey, CARD_URL, cardId)
                 .token(token)
                 .build();
 
@@ -1109,8 +1123,7 @@ public class TrelloImpl implements Trello {
      * @see org.trello4j.ChecklistService#getBoardByChecklist(java.lang.String)
      */
     @Override
-    public Board
-    getBoardByChecklist(String checklistId, final String... filter) {
+    public Board getBoardByChecklist(String checklistId, final String... filter) {
         validateObjectId(checklistId);
 
         final String url = TrelloURL
@@ -1121,6 +1134,146 @@ public class TrelloImpl implements Trello {
 
         return trelloObjFactory.createObject(new TypeToken<Board>() {
         }, doGet(url));
+    }
+
+    @Override
+    public String getCustomFieldValue(String idCard, final String idCustomField) {
+        validateObjectId(idCustomField);
+        final String url = TrelloURL
+                .create(apiKey, CARD_URL, idCard)
+                .token(token)
+                .addParameters("customFieldItems=true")
+                .build();
+
+
+        Card card = trelloObjFactory.createObject(new TypeToken<Card>() {}, doGet(url));
+        if (card == null) {
+            return null;
+        }
+        String result = null;
+        Optional<CustomFieldItem> maybeCustomField = card.getCustomFieldItems().stream().filter(field -> field.getIdCustomField().equalsIgnoreCase(idCustomField)).findFirst();
+        if (maybeCustomField.isPresent()) {
+            CustomFieldItem customField = maybeCustomField.get();
+            if (customField.getValue() == null && customField.getIdValue() != null) { //means that CustomFieldType is 'list'
+                result = lookUpfForListCustomField(card, idCustomField);
+            } else {
+                result = customField.getValue().getContent();
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public List<CustomFieldItem> getCustomFields(String idCard) {
+        List<CustomFieldItem> allCustomFieldsInBoard = new ArrayList<CustomFieldItem>();
+        Card card = getCard(idCard);
+        if (card == null) {
+            return allCustomFieldsInBoard;
+        }
+
+        String url = TrelloURL
+                .create(apiKey, TrelloURL.BOARD_CUSTOM_FIELDS_URL, card.getIdBoard())
+                .token(token)
+                .build();
+        allCustomFieldsInBoard = trelloObjFactory.createObject(new TypeToken<List<CustomFieldItem>>() {}, doGet(url));
+        return allCustomFieldsInBoard;
+    }
+
+    @Override
+    public CustomFieldItem getCustomField(String idCard, final String idCustomField) {
+
+        List<CustomFieldItem> allCustomFieldsInBoard = getCustomFields(idCard);
+        if (allCustomFieldsInBoard.isEmpty()) {
+            return null;
+        }
+
+        CustomFieldItem customField = null;
+        Optional<CustomFieldItem> maybeField = allCustomFieldsInBoard.stream().filter(field -> field.getId().equalsIgnoreCase(idCustomField)).findFirst();
+        if (maybeField.isPresent()) {
+            customField = maybeField.get();
+        }
+
+        return customField;
+    }
+
+    private String lookUpfForListCustomField(Card card, String customFieldId) {
+        String boardId = card.getIdBoard();
+        final String url = TrelloURL
+                .create(apiKey, TrelloURL.BOARD_CUSTOM_FIELDS_URL, boardId)
+                .token(token)
+                .build();
+
+        List<CustomFieldItem> allCustomFieldsInBoard = trelloObjFactory.createObject(new TypeToken<List<CustomFieldItem>>() {}, doGet(url));
+
+        String result = null;
+        Optional<CustomFieldItem> maybeCustomField = allCustomFieldsInBoard.stream().filter(field -> field.getId().equalsIgnoreCase(customFieldId)).findFirst();
+        if (maybeCustomField.isPresent()) {
+            CustomFieldItem customField = maybeCustomField.get();
+            String idValue = card.getCustomFieldItems().stream().filter(field -> field.getIdCustomField().equalsIgnoreCase(customFieldId)).findFirst().get().getIdValue();
+            Optional<CustomFieldItem.Option> maybeOption = customField.getOptions().stream().filter(opt -> opt.getId().equalsIgnoreCase(idValue)).findFirst();
+            if (maybeOption.isPresent()) {
+                CustomFieldItem.Option option = maybeOption.get();
+                result = option.getValue().getText();
+            }
+        }
+        return result;
+    }
+
+
+    @Override
+    public JsonElement setCustomFieldValue(String idCard, String idCustomField, String value) throws TrelloException {
+        CustomFieldItem customField = getCustomField(idCard, idCustomField);
+        if (customField == null) {
+            throw new TrelloException(String.format("CustomField with id '%s' not found at Card with id '%s'", idCustomField, idCard));
+        }
+
+        return setCustomFieldValue(idCard, customField, value);
+    }
+
+
+    @Override
+    public JsonElement setCustomFieldValue(String idCard, CustomFieldItem customField, String value) throws TrelloException {
+        final String url = TrelloURL
+                .create(apiKey, SET_CUSTOM_FIELD_URL, idCard, customField.getId())
+                .token(token)
+                .build();
+
+        JsonObject json = new JsonObject();
+        if (customField.getType().equals(CustomFieldItem.Type.list.toString())) {
+            Optional<CustomFieldItem.Option> maybeOption = customField.getOptions().stream().filter(option -> option.getValue().getText().equals(value)).findFirst();
+            String idOption;
+            if (maybeOption.isPresent()) {
+                idOption = maybeOption.get().getId();
+            } else {
+                throw new TrelloException(String.format("Value '%s' is incorrect for CustomField '%s' ", value, customField.getId()));
+            }
+            json.addProperty("idValue", idOption);
+        } else {
+            JsonObject jsValue = new JsonObject();
+            jsValue.addProperty(CustomFieldItem.Type.getVal(CustomFieldItem.Type.valueOf(customField.getType())), value);
+            json.add("value", jsValue);
+        }
+
+        String result = null;
+        try {
+            result = doApachePutRequest(url, json);
+        } catch (Exception e) {
+            throw new TrelloException(e);
+        }
+
+        JsonElement element = new JsonParser().parse(result);
+        return element;
+    }
+
+
+     private static String getStringFromInputStream(InputStream is) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder result = new StringBuilder();
+        String line;
+        while((line = reader.readLine()) != null) {
+            result.append(line);
+        }
+        return result.toString();
     }
 
     /*
@@ -1204,8 +1357,8 @@ public class TrelloImpl implements Trello {
         return doRequest(url, METHOD_GET);
     }
 
-    private InputStream doPut(String url) {
-        return doRequest(url, METHOD_PUT);
+    private InputStream doPut(String url, Map<String, String> map) {
+        return doRequest(url, METHOD_PUT, map);
     }
 
     private InputStream doPost(String url, Map<String, String> map) {
@@ -1217,7 +1370,7 @@ public class TrelloImpl implements Trello {
     }
 
     private InputStream doRequest(String url, String requestMethod) {
-        return doRequest(url, requestMethod, null);
+        return doRequest(url, requestMethod, (Map)null);
     }
 
     /**
@@ -1259,6 +1412,63 @@ public class TrelloImpl implements Trello {
         }
     }
 
+
+    private String doApachePutRequest(String url, JsonElement json) throws Exception {
+        try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+            HttpPut httpPut = new HttpPut(url);
+            httpPut.setEntity(new StringEntity(json.toString()));
+            httpPut.setHeader("Content-Type", "application/json");
+            httpPut.setHeader("Accept-Encoding", "gzip, deflate");
+
+            //System.out.println("Executing request " + httpPut.getRequestLine());
+
+            ResponseHandler<String> responseHandler = response -> {
+                int status = response.getStatusLine().getStatusCode();
+                if (status >= 200 && status < 300) {
+                    HttpEntity entity = response.getEntity();
+                    return entity != null ? EntityUtils.toString(entity) : null;
+                } else {
+                    String errorResponseMessage = getStringFromInputStream(response.getEntity().getContent());
+                    throw new TrelloException("Status: " + status + ", " + errorResponseMessage);
+                }
+            };
+            String responseBody = httpclient.execute(httpPut, responseHandler);
+            return responseBody;
+        }
+    }
+
+
+    private InputStream doRequest(String url, String requestMethod, JsonElement json) {
+        try {
+            HttpsURLConnection conn = (HttpsURLConnection) new URL(url).openConnection();
+
+            if (requestMethod.equals(METHOD_POST) || requestMethod.equals(METHOD_PUT)) {
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setDoOutput(requestMethod.equals(METHOD_POST) || requestMethod.equals(METHOD_PUT));
+                conn.setRequestMethod(requestMethod);
+            } else {
+                conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
+            }
+
+            if (json != null && !json.isJsonNull()) {
+                conn.getOutputStream().write(json.toString().getBytes());
+                conn.getOutputStream().close();
+            }
+
+            if (conn.getResponseCode() > 399) {
+                    return getWrappedInputStream(
+                            conn.getErrorStream(), GZIP_ENCODING.equalsIgnoreCase(conn.getContentEncoding()));
+            } else {
+                return getWrappedInputStream(
+                        conn.getInputStream(), GZIP_ENCODING.equalsIgnoreCase(conn.getContentEncoding())
+                );
+            }
+        } catch (IOException e) {
+            throw new TrelloException(e.getMessage());
+        }
+    }
+
+
     private void validateObjectId(String id) {
         if (!TrelloUtil.isObjectIdValid(id)) {
             throw new TrelloException("Invalid object id: " + id);
@@ -1283,5 +1493,9 @@ public class TrelloImpl implements Trello {
         } else {
             return new BufferedInputStream(is);
         }
+    }
+
+    public static boolean isEmpty(String string) {
+        return null == string || string.length() == 0;
     }
 }

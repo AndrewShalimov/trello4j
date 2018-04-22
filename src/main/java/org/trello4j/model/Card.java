@@ -19,6 +19,7 @@ public class Card extends TrelloObject {
     private List<String> idMembers;
     private List<Attachment> attachments;
     private List<Label> labels;
+    private List<CustomFieldItem> customFieldItems;
     private String url;
     private double pos;
 
@@ -108,6 +109,14 @@ public class Card extends TrelloObject {
 
     public void setLabels(List<Label> labels) {
         this.labels = labels;
+    }
+
+    public List<CustomFieldItem> getCustomFieldItems() {
+        return customFieldItems;
+    }
+
+    public void setCustomFieldItems(List<CustomFieldItem> customFieldItems) {
+        this.customFieldItems = customFieldItems;
     }
 
     public class Attachment {
@@ -210,7 +219,6 @@ public class Card extends TrelloObject {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(name, desc, closed, idShort, idList, idBoard, idMembers, attachments, labels, url, pos);
     }
 

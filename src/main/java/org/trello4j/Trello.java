@@ -1,6 +1,9 @@
 package org.trello4j;
 
+import org.trello4j.model.CustomFieldItem;
 import org.trello4j.model.Type;
+
+import java.util.List;
 
 /**
  * The Interface Trello.
@@ -17,5 +20,4 @@ public interface Trello extends OrganizationService, NotificationService,
 	 * @return the type
 	 */
 	Type getType(String idOrName);
-
 }
